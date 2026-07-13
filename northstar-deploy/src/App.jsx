@@ -36,6 +36,9 @@ if (typeof window !== 'undefined' && !window.storage) {
 
 
 const STORAGE_KEY = 'northstar-home-performance-site-v1';
+// Flip to true once a real live-editing backend is wired up (see Option 1 discussion).
+// Until then, the Edit Site panel stays hidden on the published site.
+const ADMIN_ENABLED = false;
 
 function BrandIcon({ name, size = 20 }) {
   const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true', focusable: 'false' };
@@ -456,13 +459,15 @@ export default function NorthStarSite() {
         <p className="footer-fine">© {new Date().getFullYear()} {c.business.name}. All rights reserved.</p>
       </footer>
 
-      {/* ADMIN TOGGLE */}
-      <button className="admin-fab" onClick={() => setAdminOpen(true)} aria-label="Edit site content">
-        <PencilLine size={18} /> Edit Site
-      </button>
+      {/* ADMIN TOGGLE — disabled on the public site until a real live-editing backend is built. Set ADMIN_ENABLED to true to bring it back. */}
+      {ADMIN_ENABLED && (
+        <button className="admin-fab" onClick={() => setAdminOpen(true)} aria-label="Edit site content">
+          <PencilLine size={18} /> Edit Site
+        </button>
+      )}
 
       {/* ADMIN DRAWER */}
-      {adminOpen && (
+      {ADMIN_ENABLED && adminOpen && (
         <div className="admin-overlay" onClick={() => setAdminOpen(false)}>
           <div className="admin-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="admin-header">
