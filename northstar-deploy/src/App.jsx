@@ -7,10 +7,8 @@ import {
 
 // Storage polyfill: outside the Claude artifact environment, window.storage
 // doesn't exist. This provides a localStorage-backed stand-in so the Edit
-// Site panel still works, per-browser, on the deployed site. Note: unlike
-// Claude's shared storage, edits made this way are only visible in the
-// browser that made them (not synced across visitors) until this is wired
-// up to a real backend.
+// Site panel still works, per-browser, on the deployed site (currently
+// disabled via ADMIN_ENABLED, kept here for when it's wired to a real backend).
 if (typeof window !== 'undefined' && !window.storage) {
   window.storage = {
     async get(key, shared) {
@@ -309,6 +307,9 @@ const NAV_PAGES = [
   { id: 'contact', label: 'Contact' },
 ];
 
+const PATH_TO_PAGE = { '/': 'home', '/roofing': 'roofing', '/home-services': 'services', '/reviews': 'reviews', '/contact': 'contact' };
+const PAGE_TO_PATH = { home: '/', roofing: '/roofing', services: '/home-services', reviews: '/reviews', contact: '/contact' };
+
 const ADMIN_TABS = [
   { id: 'business', label: 'Business & Credentials' },
   { id: 'homepage', label: 'Home Page' },
@@ -333,7 +334,10 @@ export default function NorthStarSite() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('business');
   const [navOpen, setNavOpen] = useState(false);
-  const [page, setPage] = useState('home');
+  const [page, setPage] = useState(() => {
+    if (typeof window === 'undefined') return 'home';
+    return PATH_TO_PAGE[window.location.pathname] || 'home';
+  });
   const [activeMaterial, setActiveMaterial] = useState(0);
 
   useEffect(() => {
@@ -384,7 +388,35 @@ export default function NorthStarSite() {
     }
   };
 
-  const goTo = (p) => { setPage(p); setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const goTo = (p) => {
+    setPage(p);
+    setNavOpen(false);
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', PAGE_TO_PATH[p] || '/');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const titles = {
+      home: 'NorthStar Home Performance | Roofing, Siding, Windows & Storm Restoration \u2014 Southeastern Wisconsin',
+      roofing: 'Roofing Services | NorthStar Home Performance',
+      services: 'Gutters, Siding, Windows, Solar & Lighting | NorthStar Home Performance',
+      reviews: 'Customer Reviews | NorthStar Home Performance',
+      contact: 'Contact Us | NorthStar Home Performance',
+    };
+    if (typeof document !== 'undefined') {
+      document.title = titles[page] || titles.home;
+    }
+  }, [page]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setPage(PATH_TO_PAGE[window.location.pathname] || 'home');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   if (loading || !content) {
     return (
@@ -1314,3 +1346,4 @@ function Style() {
     `}</style>
   );
 }
+
